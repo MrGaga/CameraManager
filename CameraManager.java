@@ -487,11 +487,8 @@ public class CameraManager {
 		
 		if(parametersCallback != null) {
 			
-			if(parametersCallback.set(cameraParameters)) {
-				
-				camera.setParameters(cameraParameters);
-				
-			}
+			parametersCallback.set(cameraParameters);
+			camera.setParameters(cameraParameters);
 			
 		}
 		
@@ -532,11 +529,7 @@ public class CameraManager {
 	
 	public static class CameraManagerParametersCallback {
 		
-		public boolean set(Camera.Parameters cameraParameters) {
-			
-			return true;	// If true, parameters would be set;
-			
-		}	
+		public void set(Camera.Parameters cameraParameters) {}	
 		
 	}
 	
@@ -584,15 +577,15 @@ public class CameraManager {
 	cameraManager.setParametersCallback(new CameraManagerParametersCallback(){
 		
 		@Override
-		public boolean set(Camera.Parameters cameraParameters) {
-
-			cameraParameters.setAntibanding(Parameters.ANTIBANDING_OFF);
-			cameraParameters.setSceneMode(Parameters.SCENE_MODE_BARCODE);
-			cameraParameters.setExposureCompensation(0);
+		public void set(Camera.Parameters parameters) {
 			
-			// And so on..
+			List<String> antibandingList = parameters.getSupportedAntibanding();
 			
-			return true;
+			if(antibandingList != null && antibandingList.contains(Parameters.ANTIBANDING_OFF)) {
+				
+				parameters.setAntibanding(Parameters.ANTIBANDING_OFF);
+				
+			}
 			
 		}
 		
