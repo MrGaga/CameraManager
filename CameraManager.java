@@ -3,9 +3,7 @@ package com.sukohi.lib;
 /*  Dependency: DisplaySize.java  */
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.app.Activity;
 import android.content.Context;
@@ -32,7 +30,6 @@ public class CameraManager {
 	private int frontCameraId = -1;
 	private int openCameraId = -1;
 	private byte[] previewData;
-	private Map<String, String> parameterMap = new HashMap<String, String>();
 	private Context context;
 	private SurfaceView surfaceView;
 	private Camera camera;
@@ -41,6 +38,7 @@ public class CameraManager {
 	private CameraManagerTakePictureCallback takePictureCallback;
 	private CameraManagerAutoFocusCallback autoFocusCallback;
 	private CameraManagerPreviewCallback previewCallback;
+	private CameraManagerParametersCallback parametersCallback;
 	
 	public CameraManager(Context context, SurfaceView surfaceView) {
 		
@@ -174,7 +172,6 @@ public class CameraManager {
 	
 	public boolean hasFlash() {
 		
-		cameraParameters = camera.getParameters();
 		return (cameraParameters.getSupportedFlashModes() != null);
 		
 	}
@@ -210,7 +207,7 @@ public class CameraManager {
 			surfaceHolderCallback.surfaceChanged(holder, 0, 0, 0);
 			camera.startPreview();
 			camera.setPreviewDisplay(holder);
-			setCameraParameters();
+			setParameters();
 			
 		} catch (IOException e) {
 			
@@ -220,15 +217,9 @@ public class CameraManager {
 		
 	}
 	
-	public void setParameters(Map<String, String> parameterMap) {
+	public void setParametersCallback(CameraManagerParametersCallback callback) {
 		
-		this.parameterMap = parameterMap;
-		
-	}
-	
-	public Parameters getParameters() {
-		
-		return camera.getParameters();
+		parametersCallback = callback;
 		
 	}
 	
@@ -248,7 +239,6 @@ public class CameraManager {
 		
 		if(!flashMode.equals("")) {
 
-			cameraParameters = camera.getParameters();
 			cameraParameters.setFlashMode(flashMode);
 			camera.setParameters(cameraParameters);
 			
@@ -354,7 +344,8 @@ public class CameraManager {
 
 				camera.setPreviewDisplay(holder);
 				camera.setPreviewCallback(cameraPreviewCallback);
-				setCameraParameters();
+				cameraParameters = camera.getParameters();
+				setParameters();
 				
 			} catch (Exception e) {
 					
@@ -398,7 +389,7 @@ public class CameraManager {
 			layoutParams.width = layoutWidth;
 			layoutParams.height = layoutHeight;
 			surfaceView.setLayoutParams(layoutParams);
-			setCameraParameters();
+			setParameters();
 			camera.setPreviewCallback(cameraPreviewCallback);
 			camera.startPreview();
 			
@@ -437,7 +428,6 @@ public class CameraManager {
 	
 	private Camera.Size getPictureSize() {
 		
-		cameraParameters = camera.getParameters();
 		List<Size> sizes = cameraParameters.getSupportedPictureSizes();
 		
 		if(sizes != null && sizes.size() > 0) {
@@ -493,74 +483,15 @@ public class CameraManager {
 		
 	}
 	
-	private void setCameraParameters() {
+	private void setParameters() {
 		
-		if(parameterMap.size() > 0) {
+		if(parametersCallback != null) {
 			
-			cameraParameters = camera.getParameters();
-			
-			for(Map.Entry<String, String> entry : parameterMap.entrySet()) {
+			if(parametersCallback.set(cameraParameters)) {
 				
-				String parameterKey = entry.getKey();
-				String parameterValue = entry.getValue();
+				camera.setParameters(cameraParameters);
 				
-				if(parameterKey.equals("Antibanding")) {
-					
-					List<String> supportedAnitibandingList = cameraParameters.getSupportedAntibanding();
-					
-					if(supportedAnitibandingList != null && supportedAnitibandingList.contains(parameterValue)) {
-						
-						cameraParameters.setAntibanding(parameterValue);
-						
-					}
-					
-				} else if(parameterKey.equals("SceneMode")) {
-
-					List<String> supportedSceneModeList = cameraParameters.getSupportedSceneModes();
-					
-					if(supportedSceneModeList != null && supportedSceneModeList.contains(parameterValue)) {
-
-						cameraParameters.setSceneMode(parameterValue);
-						
-					}
-					
-				} else if(parameterKey.equals("WhiteBalance")) {
-
-					List<String> supportedWhiteBalanceList = cameraParameters.getSupportedWhiteBalance();
-					
-					if(supportedWhiteBalanceList != null && supportedWhiteBalanceList.contains(parameterValue)) {
-						
-						cameraParameters.setWhiteBalance(parameterValue);
-						
-					}
-					
-				} else if(parameterKey.equals("ColorEffect")) {
-
-					List<String> supportedColorEffectsList = cameraParameters.getSupportedColorEffects();
-					
-					if(supportedColorEffectsList != null && supportedColorEffectsList.contains(parameterValue)) {
-						
-						cameraParameters.setColorEffect(parameterValue);
-						
-					}
-					
-				} else if(parameterKey.equals("ExposureCompensation")) {
-
-					int exposureValue = Integer.parseInt(parameterValue);
-					int minExposureValue = cameraParameters.getMinExposureCompensation();
-					int maxExposureValue = cameraParameters.getMaxExposureCompensation();
-					
-					if(minExposureValue <= exposureValue && exposureValue <= maxExposureValue) {
-						
-						cameraParameters.setExposureCompensation(exposureValue);
-						
-					}
-					
-				}
-			    
 			}
-			
-			camera.setParameters(cameraParameters);
 			
 		}
 		
@@ -599,14 +530,18 @@ public class CameraManager {
 		
 	}
 	
+	public static class CameraManagerParametersCallback {
+		
+		public boolean set(Camera.Parameters cameraParameters) {
+			
+			return true;	// If true, parameters would be set;
+			
+		}	
+		
+	}
+	
 }
 /*** Example
-
-	Map<String, String> parameterMap = new HashMap<String, String>();
-	parameterMap.put("Antibanding", Parameters.ANTIBANDING_AUTO);
-	parameterMap.put("SceneMode", Parameters.SCENE_MODE_AUTO);
-	parameterMap.put("WhiteBalance", Parameters.WHITE_BALANCE_AUTO);
-	parameterMap.put("ColorEffect", Parameters.EFFECT_NONE);
 
 	SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
 	final CameraManager cameraManager = new CameraManager(this, surfaceView);
@@ -646,7 +581,22 @@ public class CameraManager {
 		}
 		
 	});
-	cameraManager.setParameters(parameterMap);	// Skippable
+	cameraManager.setParametersCallback(new CameraManagerParametersCallback(){
+		
+		@Override
+		public boolean set(Camera.Parameters cameraParameters) {
+
+			cameraParameters.setAntibanding(Parameters.ANTIBANDING_OFF);
+			cameraParameters.setSceneMode(Parameters.SCENE_MODE_BARCODE);
+			cameraParameters.setExposureCompensation(0);
+			
+			// And so on..
+			
+			return true;
+			
+		}
+		
+	});
 	cameraManager.initialize();
 	
 	// Take Picture
